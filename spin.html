@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spin Wheel with Popup</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f0f0f0;
+      padding: 20px;
+    }
+
+    canvas {
+      margin: 20px auto;
+      display: block;
+    }
+
+    .wheel-container {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      margin: auto;
+    }
+
+    .pointer {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%) rotate(0deg);
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-top: 30px solid #000;
+}
+
+
+
+    #spinBtn, #addSegmentBtn {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px;
+      cursor: pointer;
+    }
+
+    input[type="text"] {
+      padding: 8px;
+      font-size: 16px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      max-width: 300px;
+      margin: auto;
+    }
+
+    li {
+      background: #fff;
+      margin: 5px 0;
+      padding: 5px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 5px;
+    }
+
+    button.edit, button.delete {
+      margin-left: 5px;
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    /* Popup styles */
+    #popup {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+
+    #popupContent {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 300px;
+    }
+
+    #popupContent h2 {
+      margin-bottom: 20px;
+    }
+
+    #popupContent button {
+      margin: 10px 5px;
+      padding: 8px 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .confetti {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+      animation: fall 2s linear infinite;
+    }
+
+    @keyframes fall {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100%); }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🎯 Spin the Wheel Kaspin</h2>
+
+  <div class="wheel-container">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="300" height="300"></canvas>
+  </div>
+
+  <button id="spinBtn">Spin</button>
+  <div>
+    <input type="text" id="segmentInput" placeholder="Add segment">
+    <button id="addSegmentBtn">Add</button>
+  </div>
+
+  <ul id="segmentList"></ul>
+
+  <!-- Popup result -->
+<div id="popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:1000;">
+  
+  <div id="popupContent" style="background:white; padding:30px; border-radius:10px; text-align:center; max-width: 400px;">
+    <h3 style="margin-bottom: 10px;">🎉 Selamat Anda Mendapatkan:</h3>
+    <h2 id="popupText" style="margin-bottom: 20px;">Result</h2>
+    <button onclick="closePopup()" style="margin-right: 10px;">Close</button>
+    <button onclick="spinWheel()">Spin Again</button>
+  </div>
+</div>
+
+
+  <script>
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const spinBtn = document.getElementById("spinBtn");
+    const addBtn = document.getElementById("addSegmentBtn");
+    const input = document.getElementById("segmentInput");
+    const list = document.getElementById("segmentList");
+    const popup = document.getElementById("popup");
+    const popupText = document.getElementById("popupText");
+
+    let segments = ["Free 1 Bulan", "Diskon 50%", "Bonus Pulsa", "Try Again"];
+
+    function drawWheel() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const angle = 2 * Math.PI / segments.length;
+      for (let i = 0; i < segments.length; i++) {
+        const start = i * angle;
+        const end = start + angle;
+        ctx.beginPath();
+        ctx.moveTo(150, 150);
+        ctx.arc(150, 150, 150, start, end);
+        ctx.fillStyle = `hsl(${i * 360 / segments.length}, 80%, 60%)`;
+        ctx.fill();
+        ctx.save();
+        ctx.translate(150, 150);
+        ctx.rotate(start + angle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 14px sans-serif";
+        ctx.fillText(segments[i], 130, 5);
+        ctx.restore();
+      }
+    }
+
+    function updateList() {
+      list.innerHTML = "";
+      segments.forEach((val, i) => {
+        const li = document.createElement("li");
+        const span = document.createElement("span");
+        span.textContent = val;
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.className = "edit";
+        editBtn.onclick = () => {
+          const newVal = prompt("Edit segment:", val);
+          if (newVal) {
+            segments[i] = newVal;
+            updateList();
+            drawWheel();
+          }
+        };
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.className = "delete";
+        deleteBtn.onclick = () => {
+          segments.splice(i, 1);
+          updateList();
+          drawWheel();
+        };
+
+        li.appendChild(span);
+        li.appendChild(editBtn);
+        li.appendChild(deleteBtn);
+        list.appendChild(li);
+      });
+    }
+
+    function spinWheel() {
+      if (segments.length === 0) {
+        alert("Add at least one segment!");
+        return;
+      }
+
+      popup.style.display = "none";
+      const anglePerSegment = 360 / segments.length;
+      const randomRotation = 3600 + Math.floor(Math.random() * 360);
+      const finalAngle = randomRotation % 360;
+
+      canvas.style.transition = "transform 4s ease-out";
+      canvas.style.transform = `rotate(${randomRotation}deg)`;
+
+      setTimeout(() => {
+        const index = Math.floor((360 - finalAngle + anglePerSegment / 2) / anglePerSegment) % segments.length;
+        const selected = segments[index];
+        popupText.textContent = selected;
+        popup.style.display = "flex";
+        canvas.style.transition = "none";
+        canvas.style.transform = `rotate(${finalAngle}deg)`;
+      }, 4000);
+    }
+
+    function closePopup() {
+      popup.style.display = "none";
+    }
+
+    addBtn.onclick = () => {
+      const val = input.value.trim();
+      if (val) {
+        segments.push(val);
+        input.value = "";
+        updateList();
+        drawWheel();
+      }
+    };
+
+    spinBtn.onclick = spinWheel;
+
+    updateList();
+    drawWheel();
+  </script>
+</body>
+</html>
